@@ -1,11 +1,14 @@
 #include "Shader.h"
+#include "rasterization.h"
 #include <GLFW\glfw3.h>
 #include <iostream>
 #include <imgui\imgui.h>
 #include <imgui_impl_glfw_gl3.h>
 const GLsizei SRC_WIDTH = 800;
-const GLsizei SRC_HEIGHT = 600;
+const GLsizei SRC_HEIGHT = 800;
 const char* TITLE = "ImGUI";
+#define ROUND(a) (a > 0 ? (int)(a + 0.5) : (int)(a - 0.5))
+#define ABS(a) ((a) < 0 ? (-a) : (a))
 
 void error_callback(int error, const char* description) {
 	std::cout << "Error " << error << ": " << description << std::endl;
@@ -72,13 +75,15 @@ int main() {
 	program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
 	int count = 3;
 	bool show_color_picker = false;
-	enum DRAW_TYPE{FILL, LINE, DOT};
+	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM};
 	DRAW_TYPE type = FILL;
 	ImGui_ImplGlfwGL3_Init(window, true);
+	vertices[0] -= 0.1f;
 	while (!glfwWindowShouldClose(window)) {
 		glfwWaitEvents();
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		glBindVertexArray(VAO);
 
 		switch (type)
 		{
@@ -91,13 +96,35 @@ int main() {
 			case DOT:
 				glDrawArrays(GL_POINTS, 0, count);
 				break;
+			case LINEDDA:
+				rasterization::LineDDA(-9, 8, 8, 6, 10);
+				rasterization::LineDDA(-90, 60, 80, 40, 100);
+				rasterization::LineDDA(-900, 400, 800, 200, 1000);
+				rasterization::LineDDA(-9000, 2000, 8000, 0, 10000);
+				rasterization::LineDDA(-90000, -90000, -90000, 10000, 100000);
+				rasterization::LineDDA(-80000, -40000, 90000, -40000, 100000);
+				break;
+			case LINEBRESENHAM:
+				rasterization::LineBresenham(-9, 8, 8, 6, 10);
+				rasterization::LineBresenham(-90, 60, 80, 40, 100);
+				rasterization::LineBresenham(-900, 400, 800, 200, 1000);
+				rasterization::LineBresenham(-9000, 2000, 8000, 0, 10000);
+				rasterization::LineBresenham(-90000, -90000, -90000, 10000, 100000);
+				rasterization::LineBresenham(-80000, -40000, 90000, -40000, 100000);
+				break;
+			case CIRCLEBRESENHAM:
+				rasterization::CircleBresenham(-15, 15, 15, 30);
+				rasterization::CircleBresenham(150, 150, 150, 300);
+				rasterization::CircleBresenham(-1500, -1500, 1500, 3000);
+				rasterization::CircleBresenham(15000, -15000, 15000, 30000);
+				break;
 			default:
 				break;
 		}
 
 		ImGui_ImplGlfwGL3_NewFrame();
 		if (ImGui::BeginMainMenuBar()) {
-			if (ImGui::BeginMenu("Change Primitives")) {
+			if (ImGui::BeginMenu("Change Primitives", (type == FILL || type == LINE || type == DOT))) {
 				if (ImGui::MenuItem("Triangle")) count = 3;
 				if (ImGui::MenuItem("Rectangle")) count = 4;
 				ImGui::EndMenu();
@@ -106,6 +133,9 @@ int main() {
 				if (ImGui::MenuItem("Fill")) type = FILL;
 				if (ImGui::MenuItem("LINE")) type = LINE;
 				if (ImGui::MenuItem("DOT")) type = DOT;
+				if (ImGui::MenuItem("LINEDDA")) type = LINEDDA;
+				if (ImGui::MenuItem("LINEBRESENHAM")) type = LINEBRESENHAM;
+				if (ImGui::MenuItem("CIRCLEBRESENHAM")) type = CIRCLEBRESENHAM;
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Color")) {
