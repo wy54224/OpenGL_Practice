@@ -75,7 +75,7 @@ int main() {
 	program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
 	int count = 3;
 	bool show_color_picker = false;
-	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM};
+	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM, TRIANGLEEDGEWALKING, TRIANGLEEDGEEQUATIONS};
 	DRAW_TYPE type = FILL;
 	ImGui_ImplGlfwGL3_Init(window, true);
 	vertices[0] -= 0.1f;
@@ -118,6 +118,18 @@ int main() {
 				rasterization::CircleBresenham(-1500, -1500, 1500, 3000);
 				rasterization::CircleBresenham(15000, -15000, 15000, 30000);
 				break;
+			case TRIANGLEEDGEWALKING:
+				rasterization::EdgeWalking(-30, 8, -4, 16, -20, 26, 33);
+				rasterization::EdgeWalking(40, 40, 150, 40, 40, 170, 190);
+				rasterization::EdgeWalking(-80, -80, -300, -80, -80, -340, 350);
+				rasterization::EdgeWalking(400, -1000, 1000, -300, 600, -1800, 2000);
+				break;
+			case TRIANGLEEDGEEQUATIONS:
+				rasterization::EdgeEquations(-30, 8, -4, 16, -20, 26, 33);
+				rasterization::EdgeEquations(40, 40, 150, 40, 40, 170, 190);
+				rasterization::EdgeEquations(-80, -80, -300, -80, -80, -340, 350);
+				rasterization::EdgeEquations(400, -1000, 1000, -300, 600, -1800, 2000);
+				break;
 			default:
 				break;
 		}
@@ -131,11 +143,13 @@ int main() {
 			}
 			if (ImGui::BeginMenu("Type")) {
 				if (ImGui::MenuItem("Fill")) type = FILL;
-				if (ImGui::MenuItem("LINE")) type = LINE;
-				if (ImGui::MenuItem("DOT")) type = DOT;
-				if (ImGui::MenuItem("LINEDDA")) type = LINEDDA;
-				if (ImGui::MenuItem("LINEBRESENHAM")) type = LINEBRESENHAM;
-				if (ImGui::MenuItem("CIRCLEBRESENHAM")) type = CIRCLEBRESENHAM;
+				if (ImGui::MenuItem("line")) type = LINE;
+				if (ImGui::MenuItem("Dot")) type = DOT;
+				if (ImGui::MenuItem("LineDDA")) type = LINEDDA;
+				if (ImGui::MenuItem("LineBresenham")) type = LINEBRESENHAM;
+				if (ImGui::MenuItem("CircleBresenham")) type = CIRCLEBRESENHAM;
+				if (ImGui::MenuItem("TriangleEdgeWalking")) type = TRIANGLEEDGEWALKING;
+				if (ImGui::MenuItem("TriangleEdgeEquations")) type = TRIANGLEEDGEEQUATIONS;
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Color")) {
