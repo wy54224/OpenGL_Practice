@@ -1,14 +1,18 @@
 #include "Shader.h"
 #include "rasterization.h"
+#include "object\ball.h"
 #include <GLFW\glfw3.h>
 #include <iostream>
 #include <imgui\imgui.h>
 #include <imgui_impl_glfw_gl3.h>
+#include <glm\glm.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+#include <glm\gtc\type_ptr.hpp>
+//OpenGLÄ¬ÈÏÁÐÖ÷Ðò
+
 const GLsizei SRC_WIDTH = 800;
 const GLsizei SRC_HEIGHT = 800;
 const char* TITLE = "ImGUI";
-#define ROUND(a) (a > 0 ? (int)(a + 0.5) : (int)(a - 0.5))
-#define ABS(a) ((a) < 0 ? (-a) : (a))
 
 void error_callback(int error, const char* description) {
 	std::cout << "Error " << error << ": " << description << std::endl;
@@ -16,10 +20,11 @@ void error_callback(int error, const char* description) {
 }
 
 void framebuffer_size_callback(GLFWwindow* window, GLsizei width, GLsizei height) {
-	glViewport(0, 0, width, height);
+	glViewport((width - MIN(width, height)) / 2, (height - MIN(width, height)) / 2, MIN(width, height), MIN(width, height));
 }
 
 int main() {
+	
 	glfwSetErrorCallback(error_callback);
 	if (!glfwInit()) {
 		std::cout << "Failed to execute glfwInit()!" << std::endl;
@@ -46,14 +51,18 @@ int main() {
 	glViewport(0, 0, SRC_WIDTH, SRC_HEIGHT);
 
 	GLfloat vertices[] = {
-		-0.3f, -0.5f,  0.0f,
-		-0.3f,  0.5f,  0.0f,
-		 0.3f, -0.5f,  0.0f,
-		 0.3f,  0.5f,  0.0f
+		-0.3f, -0.3f,  0.3f,
+		-0.3f,  0.3f,  0.3f,
+		 0.3f, -0.3f,  0.3f,
+		 0.3f,  0.3f,  0.3f,
+		-0.3f, -0.3f, -0.3f,
+		-0.3f,  0.3f, -0.3f,
+		 0.3f, -0.3f, -0.3f,
+		 0.3f,  0.3f, -0.3f
 	};
 
 	GLuint indices[] = {
-		2, 0, 1, 3
+		2, 0, 1, 3, 6, 4, 5, 7, 2, 0, 4, 6, 1, 3, 7, 5
 	};
 
 	GLuint VAO, VBO, EBO;
@@ -68,22 +77,35 @@ int main() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 	
-	Shader program("simple.vert", "simple.frag");
-	program.use();
+	Shader program("shader/simple.vert", "shader/simple.frag");
+	Shader program2("shader/UseTexture.vert", "shader/UseTexture.frag");
 	GLfloat color[3];
 	color[0] = color[1] = color[2] = 0.0f;
 	program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
+
 	int count = 3;
 	bool show_color_picker = false;
-	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM, TRIANGLEEDGEWALKING, TRIANGLEEDGEEQUATIONS};
+	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM, TRIANGLEEDGEWALKING, TRIANGLEEDGEEQUATIONS, CUBE, SURROUNDING};
 	DRAW_TYPE type = FILL;
+	int transtype = 0;
 	ImGui_ImplGlfwGL3_Init(window, true);
 	vertices[0] -= 0.1f;
+
+	type = SURROUNDING;
+	BALL earth(20, 20, 0.376f, "earth.jpg");
+	BALL moon(20, 20, 0.1f, "moon.jpg");
+
 	while (!glfwWindowShouldClose(window)) {
-		glfwWaitEvents();
+		glfwPollEvents();
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(VAO);
+		program.use();
+
+		glEnable(GL_DEPTH_TEST);
+
+		glm::mat4 trans(1.0f);
+		program.setMat4("trans", glm::value_ptr(trans));
 
 		switch (type)
 		{
@@ -95,6 +117,49 @@ int main() {
 				break;
 			case DOT:
 				glDrawArrays(GL_POINTS, 0, count);
+				break;
+			case CUBE:
+				switch (transtype)
+				{
+					case 1:
+						trans = glm::translate(trans, glm::vec3(0.0f, cos(glfwGetTime()), 0.0f));
+						break;
+					case 2:
+						trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+						break;
+					case 3:
+						trans = glm::scale(trans, glm::vec3(cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f));
+						break;
+					default:
+						break;
+				}
+				trans = glm::rotate(trans, 37.0f, glm::vec3(0.5f, 0.4f, 0.7f));
+				program.setMat4("trans", glm::value_ptr(trans));
+				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, 0);
+				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(4 * sizeof(GLuint)));
+				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(8 * sizeof(GLuint)));
+				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(12 * sizeof(GLuint)));
+				program.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+				program.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
+				glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
+				program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
+
+				break;
+			case SURROUNDING:
+				program2.use();
+				trans = glm::rotate(trans, glm::radians(-23.26f), glm::vec3(0.0f, 0.0f, 1.0f));
+				trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+				trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				program2.setMat4("trans", glm::value_ptr(trans));
+				earth.Draw();
+				program2.use();
+				trans = glm::rotate(trans, (float)glfwGetTime() / 3.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+				trans = glm::translate(trans, glm::vec3(0.0f, 0.7f, 0.0f));
+				trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+				program2.setMat4("trans", glm::value_ptr(trans));
+				moon.Draw();
+
 				break;
 			case LINEDDA:
 				rasterization::LineDDA(-9, 8, 8, 6, 10);
@@ -136,24 +201,53 @@ int main() {
 
 		ImGui_ImplGlfwGL3_NewFrame();
 		if (ImGui::BeginMainMenuBar()) {
-			if (ImGui::BeginMenu("Change Primitives", (type == FILL || type == LINE || type == DOT))) {
-				if (ImGui::MenuItem("Triangle")) count = 3;
-				if (ImGui::MenuItem("Rectangle")) count = 4;
+			if (ImGui::BeginMenu("Homework3&4")) {
+				if (ImGui::BeginMenu("Change Primitives")) {
+					if (ImGui::MenuItem("Triangle")) {
+						type = FILL;
+						count = 3;
+					}
+					if (ImGui::MenuItem("Rectangle")) {
+						type = FILL;
+						count = 4;
+					}
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Type")) {
+					if (ImGui::MenuItem("Fill")) type = FILL;
+					if (ImGui::MenuItem("line")) type = LINE;
+					if (ImGui::MenuItem("Dot")) type = DOT;
+					if (ImGui::MenuItem("LineDDA")) type = LINEDDA;
+					if (ImGui::MenuItem("LineBresenham")) type = LINEBRESENHAM;
+					if (ImGui::MenuItem("CircleBresenham")) type = CIRCLEBRESENHAM;
+					if (ImGui::MenuItem("TriangleEdgeWalking")) type = TRIANGLEEDGEWALKING;
+					if (ImGui::MenuItem("TriangleEdgeEquations")) type = TRIANGLEEDGEEQUATIONS;
+					ImGui::EndMenu();
+				}
+				if (ImGui::BeginMenu("Color")) {
+					ImGui::MenuItem("Show color picker", NULL, &show_color_picker);
+					ImGui::EndMenu();
+				}
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Type")) {
-				if (ImGui::MenuItem("Fill")) type = FILL;
-				if (ImGui::MenuItem("line")) type = LINE;
-				if (ImGui::MenuItem("Dot")) type = DOT;
-				if (ImGui::MenuItem("LineDDA")) type = LINEDDA;
-				if (ImGui::MenuItem("LineBresenham")) type = LINEBRESENHAM;
-				if (ImGui::MenuItem("CircleBresenham")) type = CIRCLEBRESENHAM;
-				if (ImGui::MenuItem("TriangleEdgeWalking")) type = TRIANGLEEDGEWALKING;
-				if (ImGui::MenuItem("TriangleEdgeEquations")) type = TRIANGLEEDGEEQUATIONS;
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("Color")) {
-				ImGui::MenuItem("Show color picker", NULL, &show_color_picker);
+			if (ImGui::BeginMenu("Homework5")) {
+				if (ImGui::MenuItem("Cube")) {
+					type = CUBE;
+					transtype = 0;
+				}
+				if (ImGui::MenuItem("Translate Cube")) {
+					type = CUBE;
+					transtype = 1;
+				}
+				if (ImGui::MenuItem("Rotate Cube")) {
+					type = CUBE;
+					transtype = 2;
+				}
+				if (ImGui::MenuItem("Scale Cube")) {
+					type = CUBE;
+					transtype = 3;
+				}
+				if (ImGui::MenuItem("Surrounding")) type = SURROUNDING;
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

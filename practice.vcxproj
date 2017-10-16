@@ -128,14 +128,22 @@
     <ClCompile Include="imgui\imgui_draw.cpp" />
     <ClCompile Include="imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="object\ball.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_internal.h" />
+    <ClInclude Include="object\ball.h" />
     <ClInclude Include="rasterization.h" />
     <ClInclude Include="Shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="simple.frag" />
+    <None Include="simple.vert" />
+    <None Include="UseTexture.frag" />
+    <None Include="UseTexture.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -2,7 +2,6 @@
 #ifndef RASTERIZATION_H
 #define RASTERIZATION_H
 #include <glad\glad.h>
-#include <cstdio>
 namespace rasterization {
 	#define ROUND(a) (a > 0 ? (int)(a + 0.5) : (int)(a - 0.5))
 	#define ABS(a) ((a) < 0 ? -(a) : (a))

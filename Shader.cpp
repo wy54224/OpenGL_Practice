@@ -89,3 +89,8 @@ void Shader::setFloat(const char* uniform, GLfloat param1, GLfloat param2, GLflo
 {
 	glUniform4f(glGetUniformLocation(this->shaderProgram, uniform), param1, param2, param3, param4);
 }
+
+void Shader::setMat4(const char * uniform, const GLfloat * mat)
+{
+	glUniformMatrix4fv(glGetUniformLocation(this->shaderProgram, uniform), 1, GL_FALSE, mat);
+}

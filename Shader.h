@@ -13,6 +13,7 @@ public:
 	void setFloat(const char* uniform, GLfloat param1, GLfloat param2);
 	void setFloat(const char* uniform, GLfloat param1, GLfloat param2, GLfloat param3);
 	void setFloat(const char* uniform, GLfloat param1, GLfloat param2, GLfloat param3, GLfloat param4);
+	void setMat4(const char* uniform, const GLfloat *mat);
 
 private:
 	GLuint shaderProgram;

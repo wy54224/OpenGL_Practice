@@ -33,7 +33,6 @@
 
 #Visual Studio project file
 *.sln
-*.filters
 *.user
 /Release/*
 /Debug/*
