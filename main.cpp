@@ -84,11 +84,13 @@ int main() {
 	Shader programScale("shader/Scale.vert", "shader/simple.frag");
 	GLfloat color[3];
 	color[0] = color[1] = color[2] = 0.0f;
+	//在使用glUniform{1, 2, 3, 4}{f, v, fv}()时必须得先glUseProgram()
+	//否则glGetError()会返回GL_INVALID_OPERATION错误，uniform值也无法传入
 	program.use();
 	program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
 
 	int count = 3;
-	bool show_color_picker = false, useTransShader = true;
+	bool show_color_picker = false, useTransShader = false;
 	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM, TRIANGLEEDGEWALKING, TRIANGLEEDGEEQUATIONS, CUBE, SURROUNDING};
 	DRAW_TYPE type = FILL;
 	int transtype = 0;
