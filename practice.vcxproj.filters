@@ -23,14 +23,34 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="simple.frag" />
-    <None Include="simple.vert" />
-    <None Include="UseTexture.frag" />
-    <None Include="UseTexture.vert" />
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="object">
       <UniqueIdentifier>{20c82edd-7a6f-442f-86ba-52d26b1dd1c8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="shader">
+      <UniqueIdentifier>{ea137269-0a33-470a-95ac-ed6944d9e4ee}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shader\Rotate.vert">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\Scale.vert">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\simple.frag">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\simple.vert">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\Translate.vert">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\UseTexture.frag">
+      <Filter>shader</Filter>
+    </None>
+    <None Include="shader\UseTexture.vert">
+      <Filter>shader</Filter>
+    </None>
   </ItemGroup>
 </Project>

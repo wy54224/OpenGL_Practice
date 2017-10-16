@@ -79,12 +79,16 @@ int main() {
 	
 	Shader program("shader/simple.vert", "shader/simple.frag");
 	Shader program2("shader/UseTexture.vert", "shader/UseTexture.frag");
+	Shader programRotate("shader/Rotate.vert", "shader/simple.frag");
+	Shader programTranslate("shader/Translate.vert", "shader/simple.frag");
+	Shader programScale("shader/Scale.vert", "shader/simple.frag");
 	GLfloat color[3];
 	color[0] = color[1] = color[2] = 0.0f;
+	program.use();
 	program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
 
 	int count = 3;
-	bool show_color_picker = false;
+	bool show_color_picker = false, useTransShader = true;
 	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM, TRIANGLEEDGEWALKING, TRIANGLEEDGEEQUATIONS, CUBE, SURROUNDING};
 	DRAW_TYPE type = FILL;
 	int transtype = 0;
@@ -119,8 +123,9 @@ int main() {
 				glDrawArrays(GL_POINTS, 0, count);
 				break;
 			case CUBE:
-				switch (transtype)
-				{
+				if (!useTransShader) {
+					switch (transtype)
+					{
 					case 1:
 						trans = glm::translate(trans, glm::vec3(0.0f, cos(glfwGetTime()), 0.0f));
 						break;
@@ -132,16 +137,47 @@ int main() {
 						break;
 					default:
 						break;
+					}
+					trans = glm::rotate(trans, 37.0f, glm::vec3(0.5f, 0.4f, 0.7f));
+					program.setMat4("trans", glm::value_ptr(trans));
 				}
-				trans = glm::rotate(trans, 37.0f, glm::vec3(0.5f, 0.4f, 0.7f));
-				program.setMat4("trans", glm::value_ptr(trans));
+				else {
+					switch (transtype)
+					{
+					case 1:
+						programTranslate.use();
+						programTranslate.setFloat("uColor", color[0], color[1], color[2], 1.0f);
+						programTranslate.setFloat("v", (float)cos(glfwGetTime()), 0.0f, 0.0f);
+						break;
+					case 2:
+						programRotate.use();
+						programRotate.setFloat("uColor", color[0], color[1], color[2], 1.0f);
+						programRotate.setFloat("angle", (float)glfwGetTime());
+						programRotate.setFloat("axis", 1.0f, 1.0f, 1.0f);
+						break;
+					case 3:
+						programScale.use();
+						programScale.setFloat("uColor", color[0], color[1], color[2], 1.0f);
+						programScale.setFloat("v", cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f);
+						break;
+					default:
+						break;
+					}
+				}
+
 				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, 0);
 				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(4 * sizeof(GLuint)));
 				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(8 * sizeof(GLuint)));
 				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(12 * sizeof(GLuint)));
 				program.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
+				programRotate.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
+				programScale.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
+				programTranslate.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
 				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 				program.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
+				programRotate.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
+				programScale.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
+				programTranslate.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
 				glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
 				program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
 
@@ -248,6 +284,7 @@ int main() {
 					transtype = 3;
 				}
 				if (ImGui::MenuItem("Surrounding")) type = SURROUNDING;
+				ImGui::MenuItem("Ues Transformatino shader", NULL, &useTransShader);
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();

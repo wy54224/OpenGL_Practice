@@ -45,6 +45,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath) {
 	checkError(this->shaderProgram, PROGRAM);
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
+	std::cout << std::endl;
 }
 
 void Shader::use() {
@@ -62,7 +63,7 @@ void Shader::checkError(GLuint shader, const int type) {
 		}
 	}else
 	if (type == PROGRAM) {
-		glGetShaderiv(shader, GL_LINK_STATUS, &success);
+		glGetProgramiv(shader, GL_LINK_STATUS, &success);
 		if (!success) {
 			glGetProgramInfoLog(shader, 512, NULL, infoLog);
 			std::cout << infoLog << std::endl;
