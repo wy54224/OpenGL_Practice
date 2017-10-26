@@ -1,18 +1,68 @@
-#include "Shader.h"
+#include "colorShader.h"
 #include "rasterization.h"
+#include "camera.h"
 #include "object\ball.h"
+#include "object\cube.h"
 #include <GLFW\glfw3.h>
 #include <iostream>
 #include <imgui\imgui.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <glm\glm.hpp>
 #include <glm\gtc\matrix_transform.hpp>
-#include <glm\gtc\type_ptr.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm\gtc\quaternion.hpp>
+#include <glm\gtx\quaternion.hpp>
 //OpenGL默认列主序
 
 const GLsizei SRC_WIDTH = 800;
 const GLsizei SRC_HEIGHT = 800;
 const char* TITLE = "ImGUI";
+Camera camera(glm::vec3(0));
+GLfloat lastFrame = 0.0f, deltaTime = 0.0f;
+int CursorMode = GLFW_CURSOR_NORMAL;
+int cameraMode = 1;
+
+void processInput(GLFWwindow* window) {
+	if (cameraMode == 1) {
+		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+			camera.CameraPositionMove(FORWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+			camera.CameraPositionMove(BACKWARD, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+			camera.CameraPositionMove(LEFT, deltaTime);
+		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+			camera.CameraPositionMove(RIGHT, deltaTime);
+	}
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+		cameraMode = 0;
+	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+		cameraMode = 1;
+	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
+		//glfwSetWindowShouldClose(window, true);
+		CursorMode = GLFW_CURSOR_NORMAL;
+	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
+		CursorMode = GLFW_CURSOR_DISABLED;
+}
+
+float lastX = SRC_WIDTH / 2, lastY = SRC_HEIGHT / 2, pitch = 0, yaw = 90.0f;
+bool isFirstMoveCursor = true;
+void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
+	if (isFirstMoveCursor) {
+		lastX = xPos;
+		lastY = yPos;
+		isFirstMoveCursor = false;
+	}
+	//std::cout << xPos - lastX << ' ' << lastY - yPos << std::endl;
+	if(cameraMode == 1)
+		camera.CameraDirectionChange(xPos - lastX, lastY - yPos);
+	lastX = xPos;
+	lastY = yPos;
+}
+
+void scroll_callback(GLFWwindow *window, double xOffset, double yOffset) {
+	if(cameraMode == 1)
+		camera.CameraZoomChange(yOffset);
+}
 
 void error_callback(int error, const char* description) {
 	std::cout << "Error " << error << ": " << description << std::endl;
@@ -48,253 +98,125 @@ int main() {
 		system("pause");
 		return -1;
 	}
-	glViewport(0, 0, SRC_WIDTH, SRC_HEIGHT);
-
-	GLfloat vertices[] = {
-		-0.3f, -0.3f,  0.3f,
-		-0.3f,  0.3f,  0.3f,
-		 0.3f, -0.3f,  0.3f,
-		 0.3f,  0.3f,  0.3f,
-		-0.3f, -0.3f, -0.3f,
-		-0.3f,  0.3f, -0.3f,
-		 0.3f, -0.3f, -0.3f,
-		 0.3f,  0.3f, -0.3f
-	};
-
-	GLuint indices[] = {
-		2, 0, 1, 3, 6, 4, 5, 7, 2, 0, 4, 6, 1, 3, 7, 5
-	};
-
-	GLuint VAO, VBO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-	glEnableVertexAttribArray(0);
-	glGenBuffers(1, &EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	
-	Shader program("shader/simple.vert", "shader/simple.frag");
-	Shader program2("shader/UseTexture.vert", "shader/UseTexture.frag");
-	Shader programRotate("shader/Rotate.vert", "shader/simple.frag");
-	Shader programTranslate("shader/Translate.vert", "shader/simple.frag");
-	Shader programScale("shader/Scale.vert", "shader/simple.frag");
-	GLfloat color[3];
-	color[0] = color[1] = color[2] = 0.0f;
-	//在使用glUniform{1, 2, 3, 4}{f, v, fv}()时必须得先glUseProgram()
-	//否则glGetError()会返回GL_INVALID_OPERATION错误，uniform值也无法传入
-	program.use();
-	program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
-
-	int count = 3;
-	bool show_color_picker = false, useTransShader = false;
-	enum DRAW_TYPE{FILL, LINE, DOT, LINEDDA, LINEBRESENHAM, CIRCLEBRESENHAM, TRIANGLEEDGEWALKING, TRIANGLEEDGEEQUATIONS, CUBE, SURROUNDING};
-	DRAW_TYPE type = FILL;
-	int transtype = 0;
 	ImGui_ImplGlfwGL3_Init(window, true);
-	vertices[0] -= 0.1f;
-
-	type = SURROUNDING;
-	BALL earth(20, 20, 0.376f, "earth.jpg");
-	BALL moon(20, 20, 0.1f, "moon.jpg");
+	glViewport(0, 0, SRC_WIDTH, SRC_HEIGHT);
+	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	
+	ColorShader shader("Shader/color.vert", "Shader/color.frag");
+	Object::ColorCube cube(1);
+	cube.setForward(glm::vec3(1));
+	cube.setBackward(glm::vec3(1, 0, 0));
+	cube.setLeft(glm::vec3(0, 1, 0));
+	cube.setRight(glm::vec3(0, 0, 1));
+	cube.setTop(glm::vec3(1, 1, 0));
+	cube.setBottom(glm::vec3(1, 0, 1));
+	//初始设置为透视投影(true)
+	bool whichProjection = true;
+	float Far, Near, Left, Right, Top, Bottom;
+	Far = Right = Top = 5;
+	Near = Left = Bottom = -5;
+	float PFar = 100.0f, PNear = 0.01, aspect = 1;
 
 	while (!glfwWindowShouldClose(window)) {
+		GLfloat currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 		glfwPollEvents();
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		processInput(window);
+		glfwSetInputMode(window, GLFW_CURSOR, CursorMode);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glBindVertexArray(VAO);
-		program.use();
-
+		//glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
+		glm::mat4 projection;
+		if (whichProjection) {
+			//透视投影
+			projection = glm::perspective(glm::radians(camera.Zoom), aspect, PNear, PFar);
+			float tanHF = tan(glm::radians(camera.Zoom) / 2);
+			projection = glm::mat4(0);
+			projection[0][0] = 1 / (aspect * tanHF);
+			projection[1][1] = 1 / tanHF;
+			projection[2][2] = -(PFar + PNear) / (PFar - PNear);
+			projection[3][2] = -(2 * PFar * PNear) / (PFar - PNear);
+			projection[2][3] = -1;
+		}
+		else {
+			//正交投影
+			//projection = glm::ortho(Left, Right, Bottom, Top, Near, Far);
+			projection = glm::mat4(1);
+			projection[0][0] = 2 / (Right - Left);
+			projection[3][0] = -(Right + Left) / (Right - Left);
+			projection[1][1] = 2 / (Top - Bottom);
+			projection[3][1] = -(Top + Bottom) / (Top - Bottom);
+			projection[2][2] = -2 / (Far - Near);
+			projection[3][2] = -(Far + Near) / (Far - Near);
 
-		glm::mat4 trans(1.0f);
-		program.setMat4("trans", glm::value_ptr(trans));
-
-		switch (type)
-		{
-			case FILL:
-				glDrawArrays(GL_TRIANGLE_STRIP, 0, count);
-				break;
-			case LINE:
-				glDrawElements(GL_LINE_LOOP, count, GL_UNSIGNED_INT, 0);
-				break;
-			case DOT:
-				glDrawArrays(GL_POINTS, 0, count);
-				break;
-			case CUBE:
-				if (!useTransShader) {
-					switch (transtype)
-					{
-					case 1:
-						trans = glm::translate(trans, glm::vec3(0.0f, cos(glfwGetTime()), 0.0f));
-						break;
-					case 2:
-						trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-						break;
-					case 3:
-						trans = glm::scale(trans, glm::vec3(cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f));
-						break;
-					default:
-						break;
-					}
-					trans = glm::rotate(trans, 37.0f, glm::vec3(0.5f, 0.4f, 0.7f));
-					program.setMat4("trans", glm::value_ptr(trans));
-				}
-				else {
-					switch (transtype)
-					{
-					case 1:
-						programTranslate.use();
-						programTranslate.setFloat("uColor", color[0], color[1], color[2], 1.0f);
-						programTranslate.setFloat("v", (float)cos(glfwGetTime()), 0.0f, 0.0f);
-						break;
-					case 2:
-						programRotate.use();
-						programRotate.setFloat("uColor", color[0], color[1], color[2], 1.0f);
-						programRotate.setFloat("angle", (float)glfwGetTime());
-						programRotate.setFloat("axis", 1.0f, 1.0f, 1.0f);
-						break;
-					case 3:
-						programScale.use();
-						programScale.setFloat("uColor", color[0], color[1], color[2], 1.0f);
-						programScale.setFloat("v", cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f, cos(glfwGetTime()) / 3 + 0.5f);
-						break;
-					default:
-						break;
-					}
-				}
-
-				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, 0);
-				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(4 * sizeof(GLuint)));
-				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(8 * sizeof(GLuint)));
-				glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_INT, (void*)(12 * sizeof(GLuint)));
-				program.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
-				programRotate.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
-				programScale.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
-				programTranslate.setFloat("uColor", 1.0f, 0.0f, 0.0f, 1.0f);
-				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-				program.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
-				programRotate.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
-				programScale.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
-				programTranslate.setFloat("uColor", 0.0f, 1.0f, 0.0f, 1.0f);
-				glDrawArrays(GL_TRIANGLE_STRIP, 4, 4);
-				program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
-
-				break;
-			case SURROUNDING:
-				program2.use();
-				trans = glm::rotate(trans, glm::radians(-23.26f), glm::vec3(0.0f, 0.0f, 1.0f));
-				trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-				trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-				program2.setMat4("trans", glm::value_ptr(trans));
-				earth.Draw();
-				program2.use();
-				trans = glm::rotate(trans, (float)glfwGetTime() / 3.0f, glm::vec3(0.0f, 0.0f, 1.0f));
-				trans = glm::translate(trans, glm::vec3(0.0f, 0.7f, 0.0f));
-				trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-				program2.setMat4("trans", glm::value_ptr(trans));
-				moon.Draw();
-
-				break;
-			case LINEDDA:
-				rasterization::LineDDA(-9, 8, 8, 6, 10);
-				rasterization::LineDDA(-90, 60, 80, 40, 100);
-				rasterization::LineDDA(-900, 400, 800, 200, 1000);
-				rasterization::LineDDA(-9000, 2000, 8000, 0, 10000);
-				rasterization::LineDDA(-90000, -90000, -90000, 10000, 100000);
-				rasterization::LineDDA(-80000, -40000, 90000, -40000, 100000);
-				break;
-			case LINEBRESENHAM:
-				rasterization::LineBresenham(-9, 8, 8, 6, 10);
-				rasterization::LineBresenham(-90, 60, 80, 40, 100);
-				rasterization::LineBresenham(-900, 400, 800, 200, 1000);
-				rasterization::LineBresenham(-9000, 2000, 8000, 0, 10000);
-				rasterization::LineBresenham(-90000, -90000, -90000, 10000, 100000);
-				rasterization::LineBresenham(-80000, -40000, 90000, -40000, 100000);
-				break;
-			case CIRCLEBRESENHAM:
-				rasterization::CircleBresenham(-15, 15, 15, 30);
-				rasterization::CircleBresenham(150, 150, 150, 300);
-				rasterization::CircleBresenham(-1500, -1500, 1500, 3000);
-				rasterization::CircleBresenham(15000, -15000, 15000, 30000);
-				break;
-			case TRIANGLEEDGEWALKING:
-				rasterization::EdgeWalking(-30, 8, -4, 16, -20, 26, 33);
-				rasterization::EdgeWalking(40, 40, 150, 40, 40, 170, 190);
-				rasterization::EdgeWalking(-80, -80, -300, -80, -80, -340, 350);
-				rasterization::EdgeWalking(400, -1000, 1000, -300, 600, -1800, 2000);
-				break;
-			case TRIANGLEEDGEEQUATIONS:
-				rasterization::EdgeEquations(-30, 8, -4, 16, -20, 26, 33);
-				rasterization::EdgeEquations(40, 40, 150, 40, 40, 170, 190);
-				rasterization::EdgeEquations(-80, -80, -300, -80, -80, -340, 350);
-				rasterization::EdgeEquations(400, -1000, 1000, -300, 600, -1800, 2000);
-				break;
-			default:
-				break;
+		}
+		glm::vec4 view(0, 0, 0, 1);
+		glm::mat4 model;
+		if (cameraMode != 2) {
+			view = camera.GetQuat();
+			model = glm::translate(glm::mat4(1), glm::vec3(0.5f, 0.5f, -1.5f));
+			shader.setMatrix(projection, view, camera.Position, model);
+			//std::cout << camera.Position.x << ' ' << camera.Position.y << ' ' << camera.Position.z << std::endl;
+		}
+		else {
+			model = glm::mat4(1);
+			float theta = glfwGetTime();
+			view.w = cos(theta / 2 + glm::radians(45.0));
+			view.x = 0;
+			view.y = -sin(theta / 2 + glm::radians(45.0));
+			view.z = 0;
+			shader.setMatrix(projection, view, glm::vec3(4 * cos(theta), 0, -4 * sin(theta)), model);
 		}
 
-		ImGui_ImplGlfwGL3_NewFrame();
+		cube.Draw(shader);
+
+		ImGui_ImplGlfwGL3_NewFrame(CursorMode);
 		if (ImGui::BeginMainMenuBar()) {
-			if (ImGui::BeginMenu("Homework3&4")) {
-				if (ImGui::BeginMenu("Change Primitives")) {
-					if (ImGui::MenuItem("Triangle")) {
-						type = FILL;
-						count = 3;
-					}
-					if (ImGui::MenuItem("Rectangle")) {
-						type = FILL;
-						count = 4;
-					}
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Type")) {
-					if (ImGui::MenuItem("Fill")) type = FILL;
-					if (ImGui::MenuItem("line")) type = LINE;
-					if (ImGui::MenuItem("Dot")) type = DOT;
-					if (ImGui::MenuItem("LineDDA")) type = LINEDDA;
-					if (ImGui::MenuItem("LineBresenham")) type = LINEBRESENHAM;
-					if (ImGui::MenuItem("CircleBresenham")) type = CIRCLEBRESENHAM;
-					if (ImGui::MenuItem("TriangleEdgeWalking")) type = TRIANGLEEDGEWALKING;
-					if (ImGui::MenuItem("TriangleEdgeEquations")) type = TRIANGLEEDGEEQUATIONS;
-					ImGui::EndMenu();
-				}
-				if (ImGui::BeginMenu("Color")) {
-					ImGui::MenuItem("Show color picker", NULL, &show_color_picker);
-					ImGui::EndMenu();
-				}
+			if (ImGui::BeginMenu("Projection")) {
+				if (ImGui::MenuItem("Orthogonal Projection")) whichProjection = false;
+				if (ImGui::MenuItem("Perspective Projection")) whichProjection = true;
 				ImGui::EndMenu();
 			}
-			if (ImGui::BeginMenu("Homework5")) {
-				if (ImGui::MenuItem("Cube")) {
-					type = CUBE;
-					transtype = 0;
-				}
-				if (ImGui::MenuItem("Translate Cube")) {
-					type = CUBE;
-					transtype = 1;
-				}
-				if (ImGui::MenuItem("Rotate Cube")) {
-					type = CUBE;
-					transtype = 2;
-				}
-				if (ImGui::MenuItem("Scale Cube")) {
-					type = CUBE;
-					transtype = 3;
-				}
-				if (ImGui::MenuItem("Surrounding")) type = SURROUNDING;
-				ImGui::MenuItem("Ues Transformatino shader", NULL, &useTransShader);
+			if (ImGui::BeginMenu("Mode")) {
+				if (ImGui::MenuItem("Camera Free")) cameraMode = 1;
+				if (ImGui::MenuItem("Camera Static")) cameraMode = 0;
+				if (ImGui::MenuItem("Camera Round")) cameraMode = 2;
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("CursorMode")) {
+				if (ImGui::MenuItem("Normal"))CursorMode = GLFW_CURSOR_NORMAL;
+				if (ImGui::MenuItem("Disappear"))CursorMode = GLFW_CURSOR_DISABLED;
 				ImGui::EndMenu();
 			}
 			ImGui::EndMainMenuBar();
 		}
-		if (show_color_picker) {
-			ImGui::Begin("Colro Picker", &show_color_picker, ImGuiWindowFlags_AlwaysAutoResize);
-			ImGui::ColorEdit3("", color);
-			program.setFloat("uColor", color[0], color[1], color[2], 1.0f);
+		if (cameraMode != 2) {
+			ImGui::Begin("", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+			if (cameraMode)
+				ImGui::Text("Press P to forbid camera Move.");
+			else
+				ImGui::Text("Press R to allow camera Move.");
+			if (CursorMode == GLFW_CURSOR_DISABLED)
+				ImGui::Text("Press J to quit cursor disable mode.");
+			else
+				ImGui::Text("Press H to hide cursor.");
+			if (whichProjection) {
+				ImGui::InputFloat("Near", &PNear);
+				ImGui::InputFloat("Far", &PFar);
+				ImGui::InputFloat("Aspect", &aspect);
+			}
+			else {
+				ImGui::InputFloat("Near", &Near);
+				ImGui::InputFloat("Far", &Far);
+				ImGui::InputFloat("Left", &Left);
+				ImGui::InputFloat("Right", &Right);
+				ImGui::InputFloat("Buttom", &Bottom);
+				ImGui::InputFloat("Top", &Top);
+			}
 			ImGui::End();
 		}
 		ImGui::Render();

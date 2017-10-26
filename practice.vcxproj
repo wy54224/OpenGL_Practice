@@ -122,20 +122,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
     <ClCompile Include="imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="object\ball.cpp" />
+    <ClCompile Include="object\colorMesh.cpp" />
+    <ClCompile Include="object\mesh.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="colorShader.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_internal.h" />
     <ClInclude Include="object\ball.h" />
+    <ClInclude Include="object\colorMesh.h" />
+    <ClInclude Include="object\cube.h" />
+    <ClInclude Include="object\mesh.h" />
+    <ClInclude Include="object\rectangle.h" />
     <ClInclude Include="rasterization.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>

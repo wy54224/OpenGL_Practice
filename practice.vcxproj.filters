@@ -8,9 +8,13 @@
     <ClCompile Include="imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="object\ball.cpp">
+    <ClCompile Include="object\colorMesh.cpp">
       <Filter>object</Filter>
     </ClCompile>
+    <ClCompile Include="object\mesh.cpp">
+      <Filter>object</Filter>
+    </ClCompile>
+    <ClCompile Include="camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui\imconfig.h" />
@@ -18,9 +22,23 @@
     <ClInclude Include="imgui\imgui_internal.h" />
     <ClInclude Include="rasterization.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="object\colorMesh.h">
+      <Filter>object</Filter>
+    </ClInclude>
+    <ClInclude Include="object\mesh.h">
+      <Filter>object</Filter>
+    </ClInclude>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="object\ball.h">
       <Filter>object</Filter>
     </ClInclude>
+    <ClInclude Include="object\cube.h">
+      <Filter>object</Filter>
+    </ClInclude>
+    <ClInclude Include="object\rectangle.h">
+      <Filter>object</Filter>
+    </ClInclude>
+    <ClInclude Include="colorShader.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="object">
