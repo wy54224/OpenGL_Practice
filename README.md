@@ -23,3 +23,8 @@ The homeworks of Computer Graphics.
 <img width="500" src="https://raw.githubusercontent.com/wiki/wy54224/OpenGL_Practice/MoonAroundEarth.png"/>  
 
 - Complete the rotate, translate and scale matrix in vertex shader(Though it may seem foolish), just for practice GLSL
+
+## [Homework6](https://github.com/wy54224/OpenGL_Practice/tree/1c1f8abc69c751c35b0bd6af9b1c48ec79838d4b)
+- Learn orthogonal projection and perspective projection
+- Use quaternion to create a camera class
+- What is [quaternion](https://github.com/wy54224/OpenGL_Practice/wiki/quaternion)?
