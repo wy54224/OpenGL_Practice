@@ -8,9 +8,11 @@
 struct ColorVertex
 {
 	glm::vec3 Position;
+	glm::vec3 Normal;
 	glm::vec3 Color;
-	ColorVertex(const glm::vec3 &_Position = glm::vec3(0), const glm::vec3 &_Color = glm::vec3(0)) :
+	ColorVertex(const glm::vec3 &_Position = glm::vec3(0), const glm::vec3 &_Normal = glm::vec3(0), const glm::vec3 &_Color = glm::vec3(0)) :
 		Position(_Position),
+		Normal(_Normal),
 		Color(_Color) {}
 };
 

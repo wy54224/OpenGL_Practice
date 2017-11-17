@@ -15,5 +15,13 @@ public:
 		setFloat("viewPos", viewPos.x, viewPos.y, viewPos.z);
 		setMat4("model", glm::value_ptr(model));
 	}
+	void setLight(const float &ka, const float &kd, const float &ks, const float &shininess, const glm::vec3 &lightDir, const glm::vec3 &lightColor) {
+		setFloat("Ka", ka);
+		setFloat("Kd", kd);
+		setFloat("Ks", ks);
+		setFloat("Shininess", shininess);
+		setFloat("direction", lightDir.x, lightDir.y, lightDir.z);
+		setFloat("lightColor", lightColor.x, lightColor.y, lightColor.z);
+	}
 };
 #endif // !COLORSHADER_H

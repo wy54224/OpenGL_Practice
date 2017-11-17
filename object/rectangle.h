@@ -28,10 +28,11 @@ namespace Object {
 	ColorMesh getRectangle(const glm::vec3 &LB, const glm::vec3 &RB, const glm::vec3 &LT, const glm::vec3 &RT, const glm::vec3 &color) {
 		std::vector<ColorVertex>vertices;
 		std::vector<unsigned int>indices;
-		vertices.push_back(ColorVertex(LB, color));
-		vertices.push_back(ColorVertex(RB, color));
-		vertices.push_back(ColorVertex(LT, color));
-		vertices.push_back(ColorVertex(RT, color));
+		glm::vec3 normal = glm::normalize(glm::cross(RB - LB, RT - LB));
+		vertices.push_back(ColorVertex(LB, normal, color));
+		vertices.push_back(ColorVertex(RB, normal, color));
+		vertices.push_back(ColorVertex(LT, normal, color));
+		vertices.push_back(ColorVertex(RT, normal, color));
 		indices.push_back(0);
 		indices.push_back(1);
 		indices.push_back(2);

@@ -20,28 +20,24 @@ const char* TITLE = "ImGUI";
 Camera camera(glm::vec3(0));
 GLfloat lastFrame = 0.0f, deltaTime = 0.0f;
 int CursorMode = GLFW_CURSOR_NORMAL;
-int cameraMode = 1;
+bool isPhongOrGouraud = true;
 
 void processInput(GLFWwindow* window) {
-	if (cameraMode == 1) {
-		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-			camera.CameraPositionMove(FORWARD, deltaTime);
-		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-			camera.CameraPositionMove(BACKWARD, deltaTime);
-		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-			camera.CameraPositionMove(LEFT, deltaTime);
-		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-			camera.CameraPositionMove(RIGHT, deltaTime);
-	}
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.CameraPositionMove(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.CameraPositionMove(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.CameraPositionMove(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.CameraPositionMove(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-		cameraMode = 0;
-	if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		cameraMode = 1;
-	if (glfwGetKey(window, GLFW_KEY_J) == GLFW_PRESS)
-		//glfwSetWindowShouldClose(window, true);
-		CursorMode = GLFW_CURSOR_NORMAL;
-	if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS)
-		CursorMode = GLFW_CURSOR_DISABLED;
+		isPhongOrGouraud = true;
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+		isPhongOrGouraud = false;
+
 }
 
 float lastX = SRC_WIDTH / 2, lastY = SRC_HEIGHT / 2, pitch = 0, yaw = 90.0f;
@@ -53,15 +49,13 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos) {
 		isFirstMoveCursor = false;
 	}
 	//std::cout << xPos - lastX << ' ' << lastY - yPos << std::endl;
-	if(cameraMode == 1)
-		camera.CameraDirectionChange(xPos - lastX, lastY - yPos);
+	//camera.CameraDirectionChange(xPos - lastX, lastY - yPos);
 	lastX = xPos;
 	lastY = yPos;
 }
 
 void scroll_callback(GLFWwindow *window, double xOffset, double yOffset) {
-	if(cameraMode == 1)
-		camera.CameraZoomChange(yOffset);
+	camera.CameraZoomChange(yOffset);
 }
 
 void error_callback(int error, const char* description) {
@@ -104,7 +98,8 @@ int main() {
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	
-	ColorShader shader("Shader/color.vert", "Shader/color.frag");
+	ColorShader phongShader("Shader/color.vert", "Shader/color.frag");
+	ColorShader gouraudShader("Shader/gcolor.vert", "Shader/gcolor.frag");
 	Object::ColorCube cube(1);
 	cube.setForward(glm::vec3(1));
 	cube.setBackward(glm::vec3(1, 0, 0));
@@ -112,12 +107,9 @@ int main() {
 	cube.setRight(glm::vec3(0, 0, 1));
 	cube.setTop(glm::vec3(1, 1, 0));
 	cube.setBottom(glm::vec3(1, 0, 1));
-	//初始设置为透视投影(true)
-	bool whichProjection = true;
-	float Far, Near, Left, Right, Top, Bottom;
-	Far = Right = Top = 5;
-	Near = Left = Bottom = -5;
-	float PFar = 100.0f, PNear = 0.01, aspect = 1;
+
+	float ka = 0.1f, kd = 0.5f, ks = 0.8f, shininess = 32;
+	glm::vec3 lightDir(-1), lightColor(1);
 
 	while (!glfwWindowShouldClose(window)) {
 		GLfloat currentFrame = glfwGetTime();
@@ -130,95 +122,34 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		//glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
-		glm::mat4 projection;
-		if (whichProjection) {
-			//透视投影
-			projection = glm::perspective(glm::radians(camera.Zoom), aspect, PNear, PFar);
-			float tanHF = tan(glm::radians(camera.Zoom) / 2);
-			projection = glm::mat4(0);
-			projection[0][0] = 1 / (aspect * tanHF);
-			projection[1][1] = 1 / tanHF;
-			projection[2][2] = -(PFar + PNear) / (PFar - PNear);
-			projection[3][2] = -(2 * PFar * PNear) / (PFar - PNear);
-			projection[2][3] = -1;
-		}
-		else {
-			//正交投影
-			//projection = glm::ortho(Left, Right, Bottom, Top, Near, Far);
-			projection = glm::mat4(1);
-			projection[0][0] = 2 / (Right - Left);
-			projection[3][0] = -(Right + Left) / (Right - Left);
-			projection[1][1] = 2 / (Top - Bottom);
-			projection[3][1] = -(Top + Bottom) / (Top - Bottom);
-			projection[2][2] = -2 / (Far - Near);
-			projection[3][2] = -(Far + Near) / (Far - Near);
-
-		}
-		glm::vec4 view(0, 0, 0, 1);
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), 1.0f, 0.01f, 100.0f);
+		glm::vec4 view = camera.GetQuat();
 		glm::mat4 model;
-		if (cameraMode != 2) {
-			view = camera.GetQuat();
-			model = glm::translate(glm::mat4(1), glm::vec3(0.5f, 0.5f, -1.5f));
-			shader.setMatrix(projection, view, camera.Position, model);
-			//std::cout << camera.Position.x << ' ' << camera.Position.y << ' ' << camera.Position.z << std::endl;
-		}
-		else {
-			model = glm::mat4(1);
-			float theta = glfwGetTime();
-			view.w = cos(theta / 2 + glm::radians(45.0));
-			view.x = 0;
-			view.y = -sin(theta / 2 + glm::radians(45.0));
-			view.z = 0;
-			shader.setMatrix(projection, view, glm::vec3(4 * cos(theta), 0, -4 * sin(theta)), model);
-		}
+		float time = glfwGetTime();
+		model = glm::translate(glm::mat4(1), glm::vec3(0, 0, -3.5f));
+		model = glm::rotate(model, time, glm::vec3(1));
+		phongShader.setMatrix(projection, view, camera.Position, model);
+		phongShader.setLight(ka, kd, ks, shininess, lightDir, lightColor);
+		gouraudShader.setMatrix(projection, view, camera.Position, model);
+		gouraudShader.setLight(ka, kd, ks, shininess, lightDir, lightColor);
 
-		cube.Draw(shader);
+		if (isPhongOrGouraud)
+			cube.Draw(phongShader);
+		else
+			cube.Draw(gouraudShader);
 
 		ImGui_ImplGlfwGL3_NewFrame(CursorMode);
-		if (ImGui::BeginMainMenuBar()) {
-			if (ImGui::BeginMenu("Projection")) {
-				if (ImGui::MenuItem("Orthogonal Projection")) whichProjection = false;
-				if (ImGui::MenuItem("Perspective Projection")) whichProjection = true;
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("Mode")) {
-				if (ImGui::MenuItem("Camera Free")) cameraMode = 1;
-				if (ImGui::MenuItem("Camera Static")) cameraMode = 0;
-				if (ImGui::MenuItem("Camera Round")) cameraMode = 2;
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("CursorMode")) {
-				if (ImGui::MenuItem("Normal"))CursorMode = GLFW_CURSOR_NORMAL;
-				if (ImGui::MenuItem("Disappear"))CursorMode = GLFW_CURSOR_DISABLED;
-				ImGui::EndMenu();
-			}
-			ImGui::EndMainMenuBar();
-		}
-		if (cameraMode != 2) {
-			ImGui::Begin("", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
-			if (cameraMode)
-				ImGui::Text("Press P to forbid camera Move.");
-			else
-				ImGui::Text("Press R to allow camera Move.");
-			if (CursorMode == GLFW_CURSOR_DISABLED)
-				ImGui::Text("Press J to quit cursor disable mode.");
-			else
-				ImGui::Text("Press H to hide cursor.");
-			if (whichProjection) {
-				ImGui::InputFloat("Near", &PNear);
-				ImGui::InputFloat("Far", &PFar);
-				ImGui::InputFloat("Aspect", &aspect);
-			}
-			else {
-				ImGui::InputFloat("Near", &Near);
-				ImGui::InputFloat("Far", &Far);
-				ImGui::InputFloat("Left", &Left);
-				ImGui::InputFloat("Right", &Right);
-				ImGui::InputFloat("Buttom", &Bottom);
-				ImGui::InputFloat("Top", &Top);
-			}
-			ImGui::End();
-		}
+		ImGui::Begin("", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+			ImGui::Text("Press Esc to exit.");
+			ImGui::Text("Press P to use phong shading.");
+			ImGui::Text("Press G to use gouraud shading.");
+			ImGui::SliderFloat("Ka", &ka, 0.0f, 1.0f);
+			ImGui::SliderFloat("Kd", &kd, 0.0f, 1.0f);
+			ImGui::SliderFloat("Ks", &ks, 0.0f, 1.0f);
+			ImGui::SliderFloat("Shininess", &shininess, 1, 128);
+			ImGui::SliderFloat3("Light direction", &lightDir[0], -1.0f, 1.0f);
+			ImGui::ColorEdit3("Light color", &lightColor[0]);
+		ImGui::End();
 		ImGui::Render();
 		glfwSwapBuffers(window);
 	}
