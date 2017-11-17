@@ -5,7 +5,7 @@ The homeworks of Computer Graphics.
 - Refer to [learnopengl.com](https://learnopengl.com/#!Getting-started/Shaders) and create a shader class  
 - Define a uniform in fragment shader to change the color of rectangle arbitrarily  
 - Use dear ImGUI to create a simple main menu bar  
-  
+
 <img width="500" src="https://raw.githubusercontent.com/wiki/wy54224/OpenGL_Practice/homework3_1.png"/>  
 
 ## [Homework4](https://github.com/wy54224/OpenGL_Practice/tree/1276e3e9fd454e7018535a8801ddca206b401175)
@@ -13,13 +13,13 @@ The homeworks of Computer Graphics.
 - Line rasterization: [DDA](https://github.com/wy54224/OpenGL_Practice/wiki/Rasterization-Algorithm#DititalDifferentialAnalyzer), [Bresenham Algorithm](https://github.com/wy54224/OpenGL_Practice/wiki/Rasterization-Algorithm#BresenhamAlgorithm)  
 - Triangle rasterization: [Edge Walking](https://github.com/wy54224/OpenGL_Practice/wiki/Rasterization-Algorithm#EdgeWalking), [Edge Equations](https://github.com/wy54224/OpenGL_Practice/wiki/Rasterization-Algorithm#EdgeEquations)  
 - Circle rasterization: [Circle Bresenham Algorithm](https://github.com/wy54224/OpenGL_Practice/wiki/Rasterization-Algorithm#CircleBresenhamAlgorithm)  
-- All code has impletemented in file [rasterization.h](https://github.com/wy54224/OpenGL_Practice/blob/1276e3e9fd454e7018535a8801ddca206b401175/rasterization.h) 
- 
+- All code has impletemented in file [rasterization.h](https://github.com/wy54224/OpenGL_Practice/blob/1276e3e9fd454e7018535a8801ddca206b401175/rasterization.h)
+
 ## [Homework5](https://github.com/wy54224/OpenGL_Practice/tree/0a7c5686bca611f7c5cd7afb983d5ec5dffe4515)
 - Learn matrix transformations
 - Implement rotate, translate and scale transformation
 - Use this transformation to make a significant animation(The usage of texture)
-  
+
 <img width="500" src="https://raw.githubusercontent.com/wiki/wy54224/OpenGL_Practice/MoonAroundEarth.png"/>  
 
 - Complete the rotate, translate and scale matrix in vertex shader(Though it may seem foolish), just for practice GLSL
@@ -28,3 +28,9 @@ The homeworks of Computer Graphics.
 - Learn orthogonal projection and perspective projection
 - Use quaternion to create a camera class
 - What is [quaternion](https://github.com/wy54224/OpenGL_Practice/wiki/quaternion)?
+
+## [Homework7](https://github.com/wy54224/OpenGL_Practice/tree/48f0a5a0fb08403e4b154fe16cb2553da75b5362)
+- Understand the difference between Phong Shading and Gourand Shading
+- Try to implement Phong Illumination Model in the above two shading
+
+<img width="500" src="https://raw.githubusercontent.com/wiki/wy54224/OpenGL_Practice/phong lighting.png"/>
