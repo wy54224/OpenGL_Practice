@@ -34,3 +34,8 @@ The homeworks of Computer Graphics.
 - Try to implement Phong Illumination Model in the above two shading
 
 <img width="500" src="https://raw.githubusercontent.com/wiki/wy54224/OpenGL_Practice/phong lighting.png"/>
+
+## [Homework8](https://github.com/wy54224/OpenGL_Practice/tree/9f41c00ef3d4684e5c585f4ed471d06c18d053d8)
+- Implement shadow mapping
+
+<img width="500" src="https://raw.githubusercontent.com/wiki/wy54224/OpenGL_Practice/shadow mapping.png"/>
