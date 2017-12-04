@@ -146,6 +146,7 @@
     <ClInclude Include="object\rectangle.h" />
     <ClInclude Include="rasterization.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="TextureShader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\Rotate.vert" />

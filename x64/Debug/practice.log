@@ -1,0 +1,16 @@
+﻿  Shader.cpp
+e:\various homework\computer graphics\opengl_practice\shader.cpp(1): fatal error C1083: 无法打开包括文件: “Shader.h”: No such file or directory
+  mesh.cpp
+e:\various homework\computer graphics\opengl_practice\object\mesh.h(4): fatal error C1083: 无法打开包括文件: “glm\glm.hpp”: No such file or directory
+  colorMesh.cpp
+e:\various homework\computer graphics\opengl_practice\object\colormesh.h(4): fatal error C1083: 无法打开包括文件: “glm\glm.hpp”: No such file or directory
+  main.cpp
+e:\various homework\computer graphics\opengl_practice\colorshader.h(2): fatal error C1083: 无法打开包括文件: “glm\glm.hpp”: No such file or directory
+  imgui_impl_glfw_gl3.cpp
+e:\various homework\computer graphics\opengl_practice\imgui_impl_glfw_gl3.cpp(9): fatal error C1083: 无法打开包括文件: “imgui\imgui.h”: No such file or directory
+  imgui_draw.cpp
+  imgui_demo.cpp
+  imgui.cpp
+  camera.cpp
+e:\various homework\computer graphics\opengl_practice\camera.h(4): fatal error C1083: 无法打开包括文件: “glm\glm.hpp”: No such file or directory
+  正在生成代码...

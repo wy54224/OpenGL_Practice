@@ -1,4 +1,5 @@
 #include "colorShader.h"
+#include "TextureShader.h"
 #include "rasterization.h"
 #include "camera.h"
 #include "object\ball.h"
@@ -14,13 +15,12 @@
 #include <glm\gtx\quaternion.hpp>
 //OpenGL默认列主序
 
-const GLsizei SRC_WIDTH = 800;
-const GLsizei SRC_HEIGHT = 800;
+GLsizei SRC_WIDTH = 800;
+GLsizei SRC_HEIGHT = 800;
 const char* TITLE = "ImGUI";
 Camera camera(glm::vec3(0));
 GLfloat lastFrame = 0.0f, deltaTime = 0.0f;
 int CursorMode = GLFW_CURSOR_NORMAL;
-bool isPhongOrGouraud = true;
 
 void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -33,10 +33,6 @@ void processInput(GLFWwindow* window) {
 		camera.CameraPositionMove(RIGHT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-		isPhongOrGouraud = true;
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
-		isPhongOrGouraud = false;
 
 }
 
@@ -64,6 +60,8 @@ void error_callback(int error, const char* description) {
 }
 
 void framebuffer_size_callback(GLFWwindow* window, GLsizei width, GLsizei height) {
+	SRC_WIDTH = width;
+	SRC_HEIGHT = height;
 	glViewport((width - MIN(width, height)) / 2, (height - MIN(width, height)) / 2, MIN(width, height), MIN(width, height));
 }
 
@@ -99,8 +97,11 @@ int main() {
 	glfwSetCursorPosCallback(window, mouse_callback);
 	
 	ColorShader phongShader("Shader/color.vert", "Shader/color.frag");
-	ColorShader gouraudShader("Shader/gcolor.vert", "Shader/gcolor.frag");
+	TextureShader groundShader("Shader/texture.vert", "Shader/texture.frag");
+	Shader simpleDepthShader("Shader/simpleDepth.vert", "Shader/simpleDepth.frag");
+	Shader depthTestShader("Shader/simpleTexture.vert", "Shader/simpleTexture.frag");
 	Object::ColorCube cube(1);
+	Object::Ground ground(30, 40, Mesh::Load("Texture/woodDiffuse.jpg"), Mesh::Load("Texture/woodSpecular.jpg"));
 	cube.setForward(glm::vec3(1));
 	cube.setBackward(glm::vec3(1, 0, 0));
 	cube.setLeft(glm::vec3(0, 1, 0));
@@ -111,6 +112,26 @@ int main() {
 	float ka = 0.1f, kd = 0.5f, ks = 0.8f, shininess = 32;
 	glm::vec3 lightDir(-1), lightColor(1);
 
+	GLuint depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+	const GLuint SHADOW_WIDTH = 4096, SHADOW_HEIGHT = 4096;
+	GLuint depthMap;
+	glGenTextures(1, &depthMap);
+	glBindTexture(GL_TEXTURE_2D, depthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	GLfloat borderColor[] = { 1.0, 1.0, 1.0, 1.0 };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	while (!glfwWindowShouldClose(window)) {
 		GLfloat currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
@@ -118,31 +139,91 @@ int main() {
 		glfwPollEvents();
 		processInput(window);
 		glfwSetInputMode(window, GLFW_CURSOR, CursorMode);
+
+		//model1——地面的model矩阵，model2——正方体的model矩阵
+		glm::mat4 model1, model2;
+		float time = glfwGetTime();
+		model1 = glm::translate(glm::mat4(1), glm::vec3(0, -7, 0));
+		model1 = glm::rotate(model1, glm::radians(45.0f), glm::vec3(1, 0, 0));
+		model2 = glm::translate(glm::mat4(1), glm::vec3(0, 0, -3.5f));
+		model2 = glm::rotate(model2, time, glm::vec3(1));
+
+		GLfloat near_plane = 0.1f, far_plane = 20.0f;
+		glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
+		glm::vec3 tmpPos = glm::normalize(-lightDir);
+		tmpPos *= 3;
+		tmpPos += glm::vec3(0, 0, -3.5f);
+		//std::cout << tmpPos.x << ' ' << tmpPos.y << ' ' << tmpPos.z << std::endl;
+		glm::mat4 lightView = glm::lookAt(tmpPos, glm::vec3(0, 0, -3.5f), glm::vec3(0, 1, 0));
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT);
+		simpleDepthShader.use();
+		simpleDepthShader.setMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
+		simpleDepthShader.setMat4("model", glm::value_ptr(model1));
+		ground.Draw(simpleDepthShader);
+		simpleDepthShader.setMat4("model", glm::value_ptr(model2));
+		cube.Draw(simpleDepthShader);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport((SRC_WIDTH - MIN(SRC_WIDTH, SRC_HEIGHT)) / 2, (SRC_HEIGHT - MIN(SRC_WIDTH, SRC_HEIGHT)) / 2, MIN(SRC_WIDTH, SRC_HEIGHT), MIN(SRC_WIDTH, SRC_HEIGHT));
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		//glEnable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_BACK);
+
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), 1.0f, 0.01f, 100.0f);
 		glm::vec4 view = camera.GetQuat();
-		glm::mat4 model;
-		float time = glfwGetTime();
-		model = glm::translate(glm::mat4(1), glm::vec3(0, 0, -3.5f));
-		model = glm::rotate(model, time, glm::vec3(1));
-		phongShader.setMatrix(projection, view, camera.Position, model);
+		groundShader.setMatrix(projection, view, camera.Position, model1);
+		groundShader.setLight(ka, kd, ks, shininess, lightDir, lightColor);
+		groundShader.setMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
+		glActiveTexture(GL_TEXTURE10);
+		groundShader.setInt("shadow", 10);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		phongShader.setMatrix(projection, view, camera.Position, model2);
 		phongShader.setLight(ka, kd, ks, shininess, lightDir, lightColor);
-		gouraudShader.setMatrix(projection, view, camera.Position, model);
-		gouraudShader.setLight(ka, kd, ks, shininess, lightDir, lightColor);
+		phongShader.setMat4("lightSpaceMatrix", glm::value_ptr(lightSpaceMatrix));
+		glActiveTexture(GL_TEXTURE10);
+		groundShader.setInt("shadow", 10);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		cube.Draw(phongShader);
+		ground.Draw(groundShader);
+		/*depthTestShader.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		GLuint VAO, VBO, EBO;
+		glGenVertexArrays(1, &VAO);
+		glGenBuffers(1, &VBO);
+		glGenBuffers(1, &EBO);
+		glBindVertexArray(VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		GLfloat vertices[] = {
+			-1, -1,  0,  0,  0,
+			 1, -1,  0,  1,  0,
+			-1,  1,  0,  0,  1,
+			 1,  1,  0,  1,  1
+		};
+		GLuint indices[] = {
+			0, 1, 2, 1, 2, 3
+		};
 
-		if (isPhongOrGouraud)
-			cube.Draw(phongShader);
-		else
-			cube.Draw(gouraudShader);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), 0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+		glBindVertexArray(0);*/
 
 		ImGui_ImplGlfwGL3_NewFrame(CursorMode);
 		ImGui::Begin("", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
 			ImGui::Text("Press Esc to exit.");
-			ImGui::Text("Press P to use phong shading.");
-			ImGui::Text("Press G to use gouraud shading.");
 			ImGui::SliderFloat("Ka", &ka, 0.0f, 1.0f);
 			ImGui::SliderFloat("Kd", &kd, 0.0f, 1.0f);
 			ImGui::SliderFloat("Ks", &ks, 0.0f, 1.0f);

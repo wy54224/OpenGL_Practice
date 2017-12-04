@@ -39,6 +39,7 @@
       <Filter>object</Filter>
     </ClInclude>
     <ClInclude Include="colorShader.h" />
+    <ClInclude Include="TextureShader.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="object">

@@ -1,14 +1,14 @@
 #version 330 core
-layout(location = 0)in vec3 pos;
-layout(location = 1)in vec3 color;
-layout(location = 2)in vec3 normal;
-out vec3 midColor;
+layout (location = 0) in vec3 point;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec2 texture;
 out vec3 midNormal;
 out vec3 fragPos;
 out vec4 fragPosLightSpace;
-uniform mat4 projection;
-uniform vec4 view;
+out vec2 TexCoord;
 uniform mat4 model;
+uniform vec4 view;
+uniform mat4 projection;
 uniform vec3 viewPos;
 uniform mat4 lightSpaceMatrix;
 
@@ -23,7 +23,7 @@ vec4 multiQuat(vec4 v1, vec4 v2)
 }
 
 void main(){
-    vec4 tmpPos = model * vec4(pos, 1.0f);
+    vec4 tmpPos = model * vec4(point, 1.0f);
     fragPos = vec3(tmpPos);
 	fragPosLightSpace = lightSpaceMatrix * tmpPos;
     gl_Position = tmpPos - vec4(viewPos, 0);
@@ -31,6 +31,6 @@ void main(){
     _view.w = -_view.w;
     gl_Position = multiQuat(multiQuat(view, gl_Position), _view);
     gl_Position = projection * gl_Position;
-    midColor = color;
     midNormal = mat3(transpose(inverse(model))) * normal;
+    TexCoord = texture;
 }
